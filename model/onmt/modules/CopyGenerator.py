@@ -2,6 +2,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 import torch.cuda
+import copy
+from torch.autograd import Variable
 
 import onmt
 import onmt.io
@@ -164,19 +166,33 @@ class TableReconstructionCriterion(object):
         self.pad = pad
 
     def __call__(self, table_attn, align, target):
-        # print("[TableReconstructionCriterion] table_attn = {}".format(table_attn))
-        # print("[TableReconstructionCriterion] align = {}".format(align))
+        # print("[TableReconstsructionCriterion] table_attn = {}".format(table_attn))
+        # print("[TableReconstructionCriterion] align = {}".format(align.view(-1, 1)))
         # print("[TableReconstructionCriterion] target = {}".format(target))
+
         # Compute unks in align and target for readability
         align_not_unk = align.ne(0).float()
+        target_not_unk = target.ne(self.pad).float()
+
         # Copy probability of tokens in source
-        out = table_attn.gather(1, align.view(-1, 1)).view(-1)
+        # print(table_attn.gather(1, Variable(torch.tensor([20]))).view(-1))
+        shape1 = table_attn.size()[1] - 1
+        align_view = [x.__float__() for x in align.view(-1, 1)]
+        align_view = [[int(x)] if x<=shape1 else int(shape1) for x in align_view]
+        align_view = Variable(torch.cuda.LongTensor(align_view))
+        out = table_attn.gather(1, align_view).view(-1)
+
         # Set scores for unk to 0 and add eps
         out = out.mul(align_not_unk) + self.eps
 
+        out_log = -out.log()
+
         # Drop padding.
-        loss = -out.log().mul(target.ne(self.pad).float())
+        loss = out_log.mul(target_not_unk)
+
         return loss.sum()
+
+
 
 class CopyGeneratorLossCompute(onmt.Loss.LossComputeBase):
     """
