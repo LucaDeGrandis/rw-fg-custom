@@ -1,7 +1,7 @@
 # rw-fg-custom
 rw-fg repo contains a small modification of the code for rw-fg that was not working.
 The code was tested with the following:
-- python 2.3
+- python 2.7
 - pytorch 0.3.1
 - torchtext 0.6.0
 
