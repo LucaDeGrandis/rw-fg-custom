@@ -178,7 +178,7 @@ class TableReconstructionCriterion(object):
         # print(table_attn.gather(1, Variable(torch.tensor([20]))).view(-1))
         shape1 = table_attn.size()[1] - 1
         align_view = [x.__float__() for x in align.view(-1, 1)]
-        align_view = [[int(x)] if x<=shape1 else int(shape1) for x in align_view]
+        align_view = [[int(x)] if x<=shape1 else [int(shape1)] for x in align_view]
         align_view = Variable(torch.cuda.LongTensor(align_view))
         out = table_attn.gather(1, align_view).view(-1)
 
